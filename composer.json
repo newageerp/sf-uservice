@@ -1,0 +1,23 @@
+{
+  "name": "newageerp/sf-uservice",
+  "type": "symfony-bundle",
+  "autoload": {
+    "psr-4": {
+      "Newageerp\\SfUservice\\": ""
+    }
+  },
+  "require": {
+    "doctrine/orm": "^2",
+    "ramsey/uuid": "^4.2",
+    "newageerp/sf-permissions": "^0",
+    "newageerp/sf-crud": "^0",
+    "newageerp/sf-serializer": "^0"
+  },
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Arturas Jegorenkovas",
+      "email": "info@newageerp.com"
+    }
+  ]
+}
