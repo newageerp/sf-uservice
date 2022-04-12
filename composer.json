@@ -11,7 +11,8 @@
     "ramsey/uuid": "^4.2",
     "newageerp/sf-permissions": "^0",
     "newageerp/sf-crud": "^0",
-    "newageerp/sf-serializer": "^0"
+    "newageerp/sf-serializer": "^0",
+    "newageerp/base-entity": "^0"
   },
   "license": "MIT",
   "authors": [

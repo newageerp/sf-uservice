@@ -6,3 +6,5 @@ services:
 
   Newageerp\SfUservice\Service\UService:
     arguments: [ ]
+  Newageerp\SfUservice\Controller\UController:
+    arguments: [ ]
