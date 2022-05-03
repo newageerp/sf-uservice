@@ -2,7 +2,9 @@
 
 namespace Newageerp\SfUservice\Service;
 
+use Doctrine\Persistence\ObjectRepository;
 use Newageerp\SfCrud\Interface\IConvertService;
+use Newageerp\SfCrud\Interface\IOnSaveService;
 use Newageerp\SfPermissions\Service\PermissionServiceInterface;
 use Newageerp\SfAuth\Service\AuthService;
 use Doctrine\ORM\EntityManagerInterface;
@@ -16,16 +18,31 @@ class UService
 
     protected IConvertService $convertService;
 
+    protected IOnSaveService $onSaveService;
+
     protected EntityManagerInterface $em;
+
+    protected array $properties = [];
+
+    protected array $schemas = [];
 
     public function __construct(
         PermissionServiceInterface $permissionService,
-        IConvertService $convertService,
-        EntityManagerInterface $em,
-    ) {
+        IConvertService            $convertService,
+        IOnSaveService             $onSaveService,
+        EntityManagerInterface     $em,
+    )
+    {
         $this->permissionService = $permissionService;
         $this->convertService = $convertService;
+        $this->onSaveService = $onSaveService;
         $this->em = $em;
+
+        $filePath = $_ENV['NAE_SFS_PROPERTIES_FILE_PATH'];
+        $this->properties = json_decode(file_get_contents($filePath), true);
+
+        $schemaFilePath = $_ENV['NAE_SFS_SCHEMAS_FILE_PATH'];
+        $this->schemas = json_decode(file_get_contents($schemaFilePath), true);
     }
 
     protected function convertSchemaToEntity(string $schema)
@@ -37,14 +54,15 @@ class UService
 
     public function getListDataForSchema(
         string $schema,
-        int $page,
-        int $pageSize,
-        array $fieldsToReturn,
-        array $filters,
-        array $extraData,
-        array $sort,
-        array $totals,
-    ) {
+        int    $page,
+        int    $pageSize,
+        array  $fieldsToReturn,
+        array  $filters,
+        array  $extraData,
+        array  $sort,
+        array  $totals,
+    )
+    {
         $user = AuthService::getInstance()->getUser();
         if (!$user) {
             throw new \Exception('Invalid user');
@@ -181,12 +199,13 @@ class UService
     protected function getStatementsFromFilters(
         QueryBuilder $qb,
                      $className,
-        array $filter,
-        bool $debug,
+        array        $filter,
+        bool         $debug,
                      &$joins,
                      &$params,
                      $classicMode = false
-    ) {
+    )
+    {
         $statements = null;
         $loopKey = '';
         if (isset($filter['and'])) {
@@ -413,5 +432,205 @@ class UService
         }
 
         return [$subJoins, $mainAlias, $alias, $fieldKey, $uuid];
+    }
+
+    /**
+     * @throws \Exception
+     */
+    public function updateElement($element, array $data, string $schema)
+    {
+        $properties = $this->getPropertiesForSchema($schema);
+
+        foreach ($data as $key => $val) {
+            if ($key === 'createdAt' || $key === 'updatedAt') {
+                continue;
+            }
+            $type = null;
+            $format = null;
+            $as = null;
+            if (isset($properties[$key], $properties[$key]['type']) && $properties[$key]['type']) {
+                $type = $properties[$key]['type'];
+            }
+            if (isset($properties[$key], $properties[$key]['format']) && $properties[$key]['format']) {
+                $format = $properties[$key]['format'];
+            }
+            if (isset($properties[$key], $properties[$key]['as']) && $properties[$key]['as']) {
+                $as = $properties[$key]['as'];
+            }
+
+            if ($type === 'string') {
+                if ($format === 'date' || $format === 'datetime' || $format === 'date-time') {
+                    $val = $val ? new \DateTime($val) : null;
+                } else {
+                    if (is_string($val)) {
+                        $val = trim($val);
+                    } else {
+//                        $notString[] = $key;
+                    }
+                }
+            }
+
+            if ($type === 'rel') {
+                if (is_array($val) && isset($val['id'])) {
+                    $typeClassName = $this->convertSchemaToEntity($format);
+                    $repository = $entityManager->getRepository($typeClassName);
+                    $val = $repository->find($val['id']);
+                } else {
+                    $val = null;
+                }
+
+
+                $mapped = null;
+                if (isset($properties[$key]['additionalProperties'])) {
+                    foreach ($properties[$key]['additionalProperties'] as $prop) {
+                        if (isset($prop['mapped'])) {
+                            $mapped = $prop['mapped'];
+                        }
+                    }
+                }
+                if ($mapped) {
+                    $mapGetter = 'get' . lcfirst($key);
+                    $mapSetter = 'set' . lcfirst($mapped);
+
+                    $mapEl = $element->$mapGetter();
+                    if ($mapEl) {
+                        $mapEl->$mapSetter(null);
+                    }
+                    if ($val) {
+                        $val->$mapSetter($element);
+                    }
+                }
+            }
+
+            if ($type === 'array' && $format !== 'string') {
+                $mapped = null;
+                if (isset($properties[$key]['additionalProperties'])) {
+                    foreach ($properties[$key]['additionalProperties'] as $prop) {
+                        if (isset($prop['mapped'])) {
+                            $mapped = $prop['mapped'];
+                        }
+                    }
+                }
+                if ($mapped) {
+                    $mainGetter = 'get' . lcfirst($key);
+
+                    $relClassName = $this->convertSchemaToEntity($format);
+                    /**
+                     * @var ObjectRepository $repository
+                     */
+                    $relRepository = $this->em->getRepository($relClassName);
+
+                    $relElements = $relRepository->findBy([$mapped => $element]);
+                    $setter = 'set' . lcfirst($mapped);
+
+                    $element->{$mainGetter}()->clear();
+
+                    foreach ($relElements as $relElement) {
+                        $relElement->$setter(null);
+                        $entityManager->persist($relElement);
+
+                        if ($element->{$mainGetter}()->contains($relElement)) {
+                            $element->{$mainGetter}()->removeElement($relElement);
+                        }
+                    }
+
+                    foreach ($val as $relVal) {
+                        $relElement = $relRepository->find($relVal['id']);
+                        if ($relElement) {
+                            $relElement->$setter($element);
+                            $entityManager->persist($relElement);
+
+                            $element->$mainGetter()->add($relElement);
+                        }
+                    }
+                } else {
+                    $method = 'set' . lcfirst($key);
+                    if (method_exists($element, $method)) {
+                        $element->$method($val);
+                    } else {
+                        $skipped[] = $method;
+                    }
+                }
+            } else {
+                $method = 'set' . lcfirst($key);
+                if (method_exists($element, $method)) {
+                    if ($type === 'number' && $format === 'float') {
+                        $element->$method((float)$val);
+                    } else if ($type === 'int' || $type === 'integer' || ($type === 'number' && $format === 'integer') || ($type === 'number' && $format === 'int')) {
+                        $element->$method((float)$val);
+                    } else {
+                        $element->$method($val);
+                    }
+                } else {
+                    $skipped[] = $method;
+                }
+            }
+
+            if ($type === 'array' && mb_strpos($as, 'entity:') === 0) {
+                $method = 'set' . lcfirst($key) . 'Value';
+
+                if (method_exists($element, $method)) {
+                    $asArray = explode(":", $as);
+                    $className = 'App\Entity\\' . ucfirst($asArray[1]);
+                    $repo = $this->em->getRepository($className);
+                    $methodGet = 'get' . ucfirst($asArray[2]);
+                    if ($val) {
+                        $cache = [];
+                        foreach ($val as $valId) {
+                            $valObject = $repo->find($valId);
+                            if ($valObject) {
+                                $cache[] = $valObject->$methodGet();
+                            }
+                            $element->$method(implode(", ", $cache));
+                        }
+                    } else {
+                        $element->$method('');
+                    }
+                }
+            }
+        }
+
+        $this->onSaveService->onSave($element);
+
+        $requiredError = [];
+        if (!isset($data['skipRequiredCheck'])) {
+            $requiredFields = [];
+            foreach ($this->getSchemas() as $schemaEl) {
+                if ($schemaEl['schema'] === $schema) {
+                    if (isset($schemaEl['required'])) {
+                        $requiredFields = $schemaEl['required'];
+                    }
+                }
+            }
+
+            foreach ($requiredFields as $requiredField) {
+                $method = 'get' . lcfirst($requiredField);
+                if (method_exists($element, $method)) {
+                    if (!$element->$method()) {
+                        $requiredError[] = $requiredField;
+                    }
+                }
+            }
+        }
+        if (count($requiredError) > 0) {
+            throw new \Exception('Užpildykite būtinus laukus');
+        }
+
+        $this->em->persist($element);
+    }
+
+    protected function getPropertiesForSchema(string $schema)
+    {
+        $properties = [];
+        foreach ($this->properties as $property) {
+            if ($property['schema'] === $schema) {
+                $properties[$property['key']] = $property;
+            }
+        }
+        return $properties;
+    }
+
+    public function getSchemas() : array {
+        return $this->schemas;
     }
 }
