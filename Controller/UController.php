@@ -213,7 +213,7 @@ class UController extends UControllerBase
 
                 $uService->updateElement($element, $item['data'], $schema);
 
-                $return[] = ObjectSerializer::serializeRow($element, $fieldsToReturn);
+//                $return[] = ObjectSerializer::serializeRow($element, $fieldsToReturn);
             }
 
             $entityManager->flush();
