@@ -473,7 +473,7 @@ class UService
             if ($type === 'rel') {
                 if (is_array($val) && isset($val['id'])) {
                     $typeClassName = $this->convertSchemaToEntity($format);
-                    $repository = $entityManager->getRepository($typeClassName);
+                    $repository = $this->em->getRepository($typeClassName);
                     $val = $repository->find($val['id']);
                 } else {
                     $val = null;
