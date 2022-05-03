@@ -174,7 +174,7 @@ class UController extends UControllerBase
     }
 
     /**
-     * @Route ("/saveMultiple/{schema}", methods={"POST"})
+     * @Route ("/saveMultiple", methods={"POST"})
      * @OA\Post (operationId="NAEUSaveMultiple")
      */
     public function USaveMultiple(Request $request, EntityManagerInterface $entityManager, UService $uService): JsonResponse
