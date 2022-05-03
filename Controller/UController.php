@@ -190,6 +190,8 @@ class UController extends UControllerBase
             $data = $request->get('data');
             $fieldsToReturn = $request->get('fieldsToReturn');
 
+            $skipSocketMessages = $request->get('skipSocketMessages');
+
             $schema = $request->get('schema');
             $className = $this->convertSchemaToEntity($schema);
             /**
@@ -216,8 +218,10 @@ class UController extends UControllerBase
 
             $entityManager->flush();
 
-            $event = new SocketSendPoolEvent();
-            $this->eventDispatcher->dispatch($event, SocketSendPoolEvent::NAME);
+            if (!$skipSocketMessages) {
+                $event = new SocketSendPoolEvent();
+                $this->eventDispatcher->dispatch($event, SocketSendPoolEvent::NAME);
+            }
 
             return $this->json(['elements' => $return]);
         } catch (Exception $e) {
