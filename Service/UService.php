@@ -527,7 +527,7 @@ class UService
 
                     foreach ($relElements as $relElement) {
                         $relElement->$setter(null);
-                        $entityManager->persist($relElement);
+                        $this->em->persist($relElement);
 
                         if ($element->{$mainGetter}()->contains($relElement)) {
                             $element->{$mainGetter}()->removeElement($relElement);
@@ -538,7 +538,7 @@ class UService
                         $relElement = $relRepository->find($relVal['id']);
                         if ($relElement) {
                             $relElement->$setter($element);
-                            $entityManager->persist($relElement);
+                            $this->em->persist($relElement);
 
                             $element->$mainGetter()->add($relElement);
                         }
