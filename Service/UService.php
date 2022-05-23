@@ -61,6 +61,7 @@ class UService
         array  $extraData,
         array  $sort,
         array  $totals,
+        bool   $skipPermissionsCheck = false,
     )
     {
         $user = AuthService::getInstance()->getUser();
@@ -69,7 +70,10 @@ class UService
         }
 
         $className = $this->convertSchemaToEntity($schema);
-        $this->permissionService->extendFilters($user, $filters, $schema);
+
+        if (!$skipPermissionsCheck) {
+            $this->permissionService->extendFilters($user, $filters, $schema);
+        }
 
         $classicMode = false;
         if (isset($filters[0]['classicMode'])) {
@@ -630,7 +634,8 @@ class UService
         return $properties;
     }
 
-    public function getSchemas() : array {
+    public function getSchemas(): array
+    {
         return $this->schemas;
     }
 }
