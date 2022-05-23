@@ -289,4 +289,62 @@ class UController extends UControllerBase
         }
     }
 
+
+    /**
+     * @Route ("/removeMultiple/{schema}", methods={"POST"})
+     * @param Request $request
+     * @param EntityManagerInterface $entityManager
+     * @return JsonResponse
+     * @OA\Post (operationId="NAEURemove")
+     */
+    public function URemoveMultiple(Request $request, EntityManagerInterface $entityManager): JsonResponse
+    {
+        try {
+            $request = $this->transformJsonBody($request);
+
+            if (!($user = $this->findUser($request))) {
+                throw new Exception('Invalid user');
+            }
+            AuthService::getInstance()->setUser($user);
+
+            $ids = $request->get('ids');
+            $schema = $request->get('schema');
+
+            $className = $this->convertSchemaToEntity($schema);
+            /**
+             * @var ObjectRepository $repository
+             */
+            $repository = $entityManager->getRepository($className);
+
+            foreach ($ids as $id) {
+                $element = $repository->find($id);
+
+                if ($element) {
+                    $entityManager->remove($element);
+                }
+            }
+
+            $entityManager->flush();
+
+            $event = new SocketSendPoolEvent();
+            $this->eventDispatcher->dispatch($event, SocketSendPoolEvent::NAME);
+
+            return $this->json(
+                [
+                    'success' => 1,
+                ]
+            );
+        } catch (Exception $e) {
+            $response = $this->json([
+                'description' => $e->getMessage(),
+                'f' => $e->getFile(),
+                'l' => $e->getLine()
+
+            ]);
+            $response->setStatusCode(Response::HTTP_BAD_REQUEST);
+            return $response;
+        }
+    }
+
+
 }
