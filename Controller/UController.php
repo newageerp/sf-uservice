@@ -291,7 +291,7 @@ class UController extends UControllerBase
 
 
     /**
-     * @Route ("/removeMultiple/{schema}", methods={"POST"})
+     * @Route ("/removeMultiple", methods={"POST"})
      * @param Request $request
      * @param EntityManagerInterface $entityManager
      * @return JsonResponse
