@@ -295,7 +295,7 @@ class UController extends UControllerBase
      * @param Request $request
      * @param EntityManagerInterface $entityManager
      * @return JsonResponse
-     * @OA\Post (operationId="NAEURemove")
+     * @OA\Post (operationId="NAEURemoveMultiple")
      */
     public function URemoveMultiple(Request $request, EntityManagerInterface $entityManager): JsonResponse
     {
