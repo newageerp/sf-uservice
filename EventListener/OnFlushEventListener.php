@@ -145,8 +145,6 @@ class OnFlushEventListener
     public function postFlush(PostFlushEventArgs $postFlushEventArgs)
     {
         foreach ($this->insertions as $entity) {
-            $this->ajLogger->warning('getScheduledEntityInsertions ' . $entity::class);
-
             foreach ($this->options as $option) {
                 if (isset($option['afterCreate'])) {
                     $onCreates = is_array($option['afterCreate']) ? $option['afterCreate'] : [$option['afterCreate']];
@@ -154,8 +152,6 @@ class OnFlushEventListener
                         $className = 'App\Entity\\' . $entityName;
 
                         if ($entity::class === $className) {
-                            $this->ajLogger->warning('afterCreate ' . $className);
-
                             $callAble = explode("::", $option['call']);
 
                             $resp = $callAble($entity);
@@ -163,7 +159,7 @@ class OnFlushEventListener
                                 $resp = [$resp];
                             }
                             foreach ($resp as $m) {
-                                $this->bus->dispatch($m, [new DelayStamp(3 * 1000)]);
+                                $this->bus->dispatch($m);
                             }
                         }
                     }
