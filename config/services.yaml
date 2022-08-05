@@ -8,3 +8,5 @@ services:
     arguments: [ ]
   Newageerp\SfUservice\Controller\UController:
     arguments: [ ]
+  Newageerp\SfUservice\EventListener\OnFlushEventListener:
+    arguments: [ ]
