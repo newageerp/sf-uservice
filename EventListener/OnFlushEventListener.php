@@ -10,12 +10,15 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
 
-class OnFlushEventListener {
+class OnFlushEventListener
+{
     protected $options = [];
 
     protected LoggerInterface $ajLogger;
 
     protected MessageBusInterface $bus;
+
+    protected array $insertions = [];
 
     public function __construct(LoggerInterface $ajLogger, MessageBusInterface $bus)
     {
@@ -25,6 +28,7 @@ class OnFlushEventListener {
             file_get_contents($_ENV['NAE_SFS_CP_STORAGE_PATH'] . '/entity-changes.json'),
             true
         );
+        $this->insertions = [];
     }
 
     public function onFlush(OnFlushEventArgs $onFlushEventArgs)
@@ -56,6 +60,8 @@ class OnFlushEventListener {
         }
 
         foreach ($uow->getScheduledEntityInsertions() as $entity) {
+            $this->insertions[] = $entity;
+            
             foreach ($this->options as $option) {
                 if (isset($option['onCreate'])) {
                     $onCreates = is_array($option['onCreate']) ? $option['onCreate'] : [$option['onCreate']];
@@ -138,10 +144,9 @@ class OnFlushEventListener {
 
     public function postFlush(PostFlushEventArgs $postFlushEventArgs)
     {
-        $em = $postFlushEventArgs->getEntityManager();
-        $uow = $em->getUnitOfWork();
+        foreach ($this->insertions as $entity) {
+            $this->ajLogger->warning('getScheduledEntityInsertions ' . $entity::class);
 
-        foreach ($uow->getScheduledEntityInsertions() as $entity) {
             foreach ($this->options as $option) {
                 if (isset($option['afterCreate'])) {
                     $onCreates = is_array($option['afterCreate']) ? $option['afterCreate'] : [$option['afterCreate']];
@@ -149,6 +154,8 @@ class OnFlushEventListener {
                         $className = 'App\Entity\\' . $entityName;
 
                         if ($entity::class === $className) {
+                            $this->ajLogger->warning('afterCreate ' . $className);
+
                             $callAble = explode("::", $option['call']);
 
                             $resp = $callAble($entity);
@@ -163,5 +170,6 @@ class OnFlushEventListener {
                 }
             }
         }
+        $this->insertions = [];
     }
 }
