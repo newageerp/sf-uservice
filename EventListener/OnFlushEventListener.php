@@ -138,5 +138,30 @@ class OnFlushEventListener {
 
     public function postFlush(PostFlushEventArgs $postFlushEventArgs)
     {
+        $em = $postFlushEventArgs->getEntityManager();
+        $uow = $em->getUnitOfWork();
+
+        foreach ($uow->getScheduledEntityInsertions() as $entity) {
+            foreach ($this->options as $option) {
+                if (isset($option['afterCreate'])) {
+                    $onCreates = is_array($option['afterCreate']) ? $option['afterCreate'] : [$option['afterCreate']];
+                    foreach ($onCreates as $entityName) {
+                        $className = 'App\Entity\\' . $entityName;
+
+                        if ($entity::class === $className) {
+                            $callAble = explode("::", $option['call']);
+
+                            $resp = $callAble($entity);
+                            if (!is_array($resp)) {
+                                $resp = [$resp];
+                            }
+                            foreach ($resp as $m) {
+                                $this->bus->dispatch($m, [new DelayStamp(3 * 1000)]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
