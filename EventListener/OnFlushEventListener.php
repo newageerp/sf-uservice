@@ -86,9 +86,8 @@ class OnFlushEventListener
         }
 
         foreach ($uow->getScheduledEntityUpdates() as $entity) {
-            $this->updates[] = $entity;
-
             $changes = $em->getUnitOfWork()->getEntityChangeSet($entity);
+            $this->updates[] = ['entity' => $entity, 'changes' => $changes];
 
             foreach ($this->options as $option) {
                 if (isset($option['onChange'])) {
@@ -170,14 +169,18 @@ class OnFlushEventListener
             }
         }
 
-        foreach ($this->updates as $entity) {
+        foreach ($this->updates as $updateData) {
+            $entity = $updateData['entity'];
+            $changes = $updateData['changes'];
+            
             foreach ($this->options as $option) {
-                if (isset($option['afterUpdate'])) {
-                    $onCreates = is_array($option['afterUpdate']) ? $option['afterUpdate'] : [$option['afterUpdate']];
-                    foreach ($onCreates as $entityName) {
+                if (isset($option['afterChange'])) {
+                    $afterChanges = is_array($option['afterChange']) ? $option['afterChange'] : [$option['afterChange']];
+                    foreach ($afterChanges as $afterChange) {
+                        [$entityName, $field] = explode(".", $afterChange);
                         $className = 'App\Entity\\' . $entityName;
 
-                        if ($entity::class === $className) {
+                        if ($entity::class === $className && isset($changes[$field])) {
                             $callAble = explode("::", $option['call']);
 
                             $resp = $callAble($entity);
@@ -185,7 +188,38 @@ class OnFlushEventListener
                                 $resp = [$resp];
                             }
                             foreach ($resp as $m) {
-                                $this->bus->dispatch($m);
+                                $this->bus->dispatch($m, [new DelayStamp(3 * 1000)]);
+                            }
+                        }
+                    }
+                }
+
+                if (isset($option['afterChangeWithParams'])) {
+                    $afterChanges = is_array($option['afterChangeWithParams']) ? $option['afterChangeWithParams'] : [$option['afterChangeWithParams']];
+                    foreach ($afterChanges as $afterChange) {
+                        [$entityName, $field] = explode(".", $afterChange);
+                        $className = 'App\Entity\\' . $entityName;
+
+                        if ($entity::class === $className && isset($changes[$field])) {
+                            $callAble = explode("::", $option['call']);
+
+                            if ($changes[$field][0]) {
+                                $resp = $callAble($entity, $changes[$field][0]);
+                                if (!is_array($resp)) {
+                                    $resp = [$resp];
+                                }
+                                foreach ($resp as $m) {
+                                    $this->bus->dispatch($m, [new DelayStamp(3 * 1000)]);
+                                }
+                            }
+                            if ($changes[$field][1]) {
+                                $resp = $callAble($entity, $changes[$field][1]);
+                                if (!is_array($resp)) {
+                                    $resp = [$resp];
+                                }
+                                foreach ($resp as $m) {
+                                    $this->bus->dispatch($m, [new DelayStamp(3 * 1000)]);
+                                }
                             }
                         }
                     }
