@@ -188,7 +188,7 @@ class OnFlushEventListener
                                 $resp = [$resp];
                             }
                             foreach ($resp as $m) {
-                                $this->bus->dispatch($m, [new DelayStamp(3 * 1000)]);
+                                $this->bus->dispatch($m);
                             }
                         }
                     }
@@ -218,7 +218,7 @@ class OnFlushEventListener
                                     $resp = [$resp];
                                 }
                                 foreach ($resp as $m) {
-                                    $this->bus->dispatch($m, [new DelayStamp(3 * 1000)]);
+                                    $this->bus->dispatch($m);
                                 }
                             }
                         }
