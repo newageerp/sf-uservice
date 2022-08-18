@@ -19,6 +19,7 @@ class OnFlushEventListener
     protected MessageBusInterface $bus;
 
     protected array $insertions = [];
+    protected array $updates = [];
 
     public function __construct(LoggerInterface $ajLogger, MessageBusInterface $bus)
     {
@@ -85,6 +86,8 @@ class OnFlushEventListener
         }
 
         foreach ($uow->getScheduledEntityUpdates() as $entity) {
+            $this->updates[] = $entity;
+
             $changes = $em->getUnitOfWork()->getEntityChangeSet($entity);
 
             foreach ($this->options as $option) {
@@ -166,6 +169,31 @@ class OnFlushEventListener
                 }
             }
         }
+
+        foreach ($this->updates as $entity) {
+            foreach ($this->options as $option) {
+                if (isset($option['afterUpdate'])) {
+                    $onCreates = is_array($option['afterUpdate']) ? $option['afterUpdate'] : [$option['afterUpdate']];
+                    foreach ($onCreates as $entityName) {
+                        $className = 'App\Entity\\' . $entityName;
+
+                        if ($entity::class === $className) {
+                            $callAble = explode("::", $option['call']);
+
+                            $resp = $callAble($entity);
+                            if (!is_array($resp)) {
+                                $resp = [$resp];
+                            }
+                            foreach ($resp as $m) {
+                                $this->bus->dispatch($m);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         $this->insertions = [];
+        $this->updates = [];
     }
 }
