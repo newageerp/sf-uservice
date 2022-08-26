@@ -259,7 +259,7 @@ class OnFlushEventListener
                 }
             }
 
-            $msg = new AMQPMessage(json_encode(['action' => 'insert', 'data' => $updateData]));
+            $msg = new AMQPMessage(json_encode(['action' => 'update', 'data' => $updateData]));
             $this->channel->basic_publish($msg, '', $_ENV['NAE_SFS_RBQ_QUEUE']);
         }
 
