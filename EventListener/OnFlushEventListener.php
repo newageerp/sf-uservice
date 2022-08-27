@@ -10,11 +10,6 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Messenger\Stamp\DelayStamp;
 
-use PhpAmqpLib\Wire\AMQPTable;
-use PhpAmqpLib\Connection\AMQPStreamConnection;
-use PhpAmqpLib\Message\AMQPMessage;
-use PhpAmqpLib\Channel\AMQPChannel;
-
 class OnFlushEventListener
 {
     protected $options = [];
@@ -22,10 +17,6 @@ class OnFlushEventListener
     protected LoggerInterface $ajLogger;
 
     protected MessageBusInterface $bus;
-
-    protected AMQPStreamConnection $connection;
-
-    protected AMQPChannel $channel;
 
     protected array $insertions = [];
     protected array $updates = [];
@@ -38,20 +29,6 @@ class OnFlushEventListener
 
     public function __construct(LoggerInterface $ajLogger, MessageBusInterface $bus)
     {
-        $this->connection = new AMQPStreamConnection($_ENV['NAE_SFS_RBQ_HOST'], (int)$_ENV['NAE_SFS_RBQ_PORT'], $_ENV['NAE_SFS_RBQ_USER'], $_ENV['NAE_SFS_RBQ_PASSWORD']);
-        $this->channel = $this->connection->channel();
-        $args = new AMQPTable();
-        $args->set('x-message-ttl', 60 * 1000);
-        $this->channel->queue_declare(
-            $_ENV['NAE_SFS_RBQ_QUEUE'],
-            false,
-            false,
-            false,
-            false,
-            false,
-            $args
-        );
-
         $this->ajLogger = $ajLogger;
         $this->bus = $bus;
         $this->options = json_decode(
@@ -197,9 +174,6 @@ class OnFlushEventListener
                     }
                 }
             }
-
-            $msg = new AMQPMessage(json_encode(['action' => 'insert', 'data' => $entity]));
-            $this->channel->basic_publish($msg, '', $_ENV['NAE_SFS_RBQ_QUEUE']);
         }
 
         foreach ($this->updates as $updateData) {
@@ -258,9 +232,6 @@ class OnFlushEventListener
                     }
                 }
             }
-
-            $msg = new AMQPMessage(json_encode(['action' => 'update', 'data' => $updateData]));
-            $this->channel->basic_publish($msg, '', $_ENV['NAE_SFS_RBQ_QUEUE']);
         }
 
         $this->insertions = [];
