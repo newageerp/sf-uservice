@@ -5,7 +5,7 @@ namespace Newageerp\SfUservice\Controller;
 use DateTime;
 use Doctrine\Persistence\ObjectRepository;
 use Exception;
-use Newageerp\SfSocket\Event\SocketSendPoolEvent;
+
 use Newageerp\SfUservice\Service\UService;
 use Newageerp\SfSerializer\Serializer\ObjectSerializer;
 use Doctrine\ORM\EntityManagerInterface;
