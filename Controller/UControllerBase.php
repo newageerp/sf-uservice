@@ -5,6 +5,7 @@ namespace Newageerp\SfUservice\Controller;
 use Doctrine\ORM\EntityManagerInterface;
 use Newageerp\SfBaseEntity\Controller\OaBaseController;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Newageerp\SfSocket\Service\SocketService;
 
 class UControllerBase extends OaBaseController
 {
@@ -12,9 +13,9 @@ class UControllerBase extends OaBaseController
 
     protected array $schemas = [];
 
-    public function __construct(EntityManagerInterface $em, EventDispatcherInterface $eventDispatcher)
+    public function __construct(EntityManagerInterface $em, EventDispatcherInterface $eventDispatcher, SocketService $socketService)
     {
-        parent::__construct($em, $eventDispatcher);
+        parent::__construct($em, $eventDispatcher, $socketService);
         $filePath = $_ENV['NAE_SFS_PROPERTIES_FILE_PATH'];
         $this->properties = json_decode(file_get_contents($filePath), true);
 

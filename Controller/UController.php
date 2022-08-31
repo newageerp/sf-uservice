@@ -155,8 +155,7 @@ class UController extends UControllerBase
 
             $entityManager->flush();
 
-            $event = new SocketSendPoolEvent();
-            $this->eventDispatcher->dispatch($event, SocketSendPoolEvent::NAME);
+            $this->sendSocketPool();
 
             $jsonContent = ObjectSerializer::serializeRow($element, $fieldsToReturn);
 
@@ -219,8 +218,7 @@ class UController extends UControllerBase
             $entityManager->flush();
 
             if (!$skipSocketMessages) {
-                $event = new SocketSendPoolEvent();
-                $this->eventDispatcher->dispatch($event, SocketSendPoolEvent::NAME);
+                $this->sendSocketPool();
             }
 
             return $this->json(['elements' => $return]);
@@ -269,8 +267,7 @@ class UController extends UControllerBase
 
             $entityManager->flush();
 
-            $event = new SocketSendPoolEvent();
-            $this->eventDispatcher->dispatch($event, SocketSendPoolEvent::NAME);
+            $this->sendSocketPool();
 
             return $this->json(
                 [
@@ -326,8 +323,7 @@ class UController extends UControllerBase
 
             $entityManager->flush();
 
-            $event = new SocketSendPoolEvent();
-            $this->eventDispatcher->dispatch($event, SocketSendPoolEvent::NAME);
+            $this->sendSocketPool();
 
             return $this->json(
                 [
