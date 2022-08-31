@@ -192,7 +192,8 @@ class UService
             'records' => $pagingData['c'],
             'totals' => $totalData,
             'sql' => $query ? $query->getSQL() : '',
-            'params' => $query ? $query->getParameters() : [],
+            // 'params' => $query ? $query->getParameters() : [],
+            'params' => [],
             'filters' => $filters,
             // 'log' => $log,
             'cl' => $classicMode
