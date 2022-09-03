@@ -21,12 +21,6 @@ class OnFlushEventListener
     protected array $insertions = [];
     protected array $updates = [];
 
-    public function __destruct()
-    {
-        $this->channel->close();
-        $this->connection->close();
-    }
-
     public function __construct(LoggerInterface $ajLogger, MessageBusInterface $bus)
     {
         $this->ajLogger = $ajLogger;
