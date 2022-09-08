@@ -598,7 +598,7 @@ class UService
         $this->onSaveService->onSave($element);
 
         $requiredError = [];
-        if (!isset($data['skipRequiredCheck'])) {
+        if (!(isset($data['skipRequiredCheck']) && $data['skipRequiredCheck'])) {
             $requiredFields = [];
             foreach ($this->getSchemas() as $schemaEl) {
                 if ($schemaEl['schema'] === $schema) {
