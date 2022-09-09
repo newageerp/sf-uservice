@@ -45,6 +45,13 @@ class UService
         $this->schemas = json_decode(file_get_contents($schemaFilePath), true);
     }
 
+    public function getEntityFromSchemaAndId(string $schema, int $id) {
+        $entityClass = $this->convertSchemaToEntity($schema);
+        $repo = $this->em->getRepository($entityClass);
+        $entity = $repo->find($id);
+        return $entity;
+    }
+
     protected function convertSchemaToEntity(string $schema)
     {
         $entityClass = implode('', array_map('ucfirst', explode("-", $schema)));
