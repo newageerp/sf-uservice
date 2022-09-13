@@ -11,8 +11,8 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Ramsey\Uuid\Uuid;
 use Newageerp\SfSerializer\Serializer\ObjectSerializer;
-use Newageerp\Uservice\Events\UBeforeCreateEvent;
-use Newageerp\Uservice\Events\UBeforeUpdateEvent;
+use Newageerp\SfUservice\Events\UBeforeCreateEvent;
+use Newageerp\SfUservice\Events\UBeforeUpdateEvent;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class UService

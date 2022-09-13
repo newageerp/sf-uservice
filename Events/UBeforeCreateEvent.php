@@ -1,5 +1,5 @@
 <?php
-namespace Newageerp\Uservice\Events;
+namespace Newageerp\SfUservice\Events;
 
 use Symfony\Contracts\EventDispatcher\Event;
 
