@@ -11,7 +11,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Ramsey\Uuid\Uuid;
 use Newageerp\SfSerializer\Serializer\ObjectSerializer;
+use Newageerp\SfUservice\Events\UBeforeCreateAfterSetEvent;
 use Newageerp\SfUservice\Events\UBeforeCreateEvent;
+use Newageerp\SfUservice\Events\UBeforeUpdateAfterSetEvent;
 use Newageerp\SfUservice\Events\UBeforeUpdateEvent;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
@@ -456,9 +458,11 @@ class UService
      */
     public function updateElement($element, array $data, string $schema)
     {
-        if ($element->getId()) {
+        $isNew = false;
+        if (!$element->getId()) {
             $ev = new UBeforeCreateEvent($element, $data, $schema);
             $this->eventDispatcher->dispatch($ev, UBeforeCreateEvent::NAME);
+            $isNew = true;
         } else {
             $ev = new UBeforeUpdateEvent($element, $data, $schema);
             $this->eventDispatcher->dispatch($ev, UBeforeUpdateEvent::NAME);
@@ -613,6 +617,14 @@ class UService
                     }
                 }
             }
+        }
+
+        if ($isNew) {
+            $ev = new UBeforeCreateAfterSetEvent($element, $data, $schema);
+            $this->eventDispatcher->dispatch($ev, UBeforeCreateAfterSetEvent::NAME);
+        } else {
+            $ev = new UBeforeUpdateAfterSetEvent($element, $data, $schema);
+            $this->eventDispatcher->dispatch($ev, UBeforeUpdateAfterSetEvent::NAME);
         }
 
         $this->onSaveService->onSave($element);
