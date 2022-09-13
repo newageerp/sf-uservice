@@ -11,6 +11,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\QueryBuilder;
 use Ramsey\Uuid\Uuid;
 use Newageerp\SfSerializer\Serializer\ObjectSerializer;
+use Newageerp\Uservice\Events\UBeforeCreateEvent;
+use Newageerp\Uservice\Events\UBeforeUpdateEvent;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 class UService
 {
@@ -22,6 +25,8 @@ class UService
 
     protected EntityManagerInterface $em;
 
+    protected EventDispatcherInterface $eventDispatcher;
+
     protected array $properties = [];
 
     protected array $schemas = [];
@@ -31,12 +36,13 @@ class UService
         IConvertService            $convertService,
         IOnSaveService             $onSaveService,
         EntityManagerInterface     $em,
-    )
-    {
+        EventDispatcherInterface $eventDispatcher,
+    ) {
         $this->permissionService = $permissionService;
         $this->convertService = $convertService;
         $this->onSaveService = $onSaveService;
         $this->em = $em;
+        $this->eventDispatcher = $eventDispatcher;
 
         $filePath = $_ENV['NAE_SFS_PROPERTIES_FILE_PATH'];
         $this->properties = json_decode(file_get_contents($filePath), true);
@@ -45,7 +51,8 @@ class UService
         $this->schemas = json_decode(file_get_contents($schemaFilePath), true);
     }
 
-    public function getEntityFromSchemaAndId(string $schema, int $id) {
+    public function getEntityFromSchemaAndId(string $schema, int $id)
+    {
         $entityClass = $this->convertSchemaToEntity($schema);
         $repo = $this->em->getRepository($entityClass);
         $entity = $repo->find($id);
@@ -69,8 +76,7 @@ class UService
         array  $sort,
         array  $totals,
         bool   $skipPermissionsCheck = false,
-    )
-    {
+    ) {
         $user = AuthService::getInstance()->getUser();
         if (!$user) {
             throw new \Exception('Invalid user');
@@ -210,14 +216,13 @@ class UService
 
     protected function getStatementsFromFilters(
         QueryBuilder $qb,
-                     $className,
+        $className,
         array        $filter,
         bool         $debug,
-                     &$joins,
-                     &$params,
-                     $classicMode = false
-    )
-    {
+        &$joins,
+        &$params,
+        $classicMode = false
+    ) {
         $statements = null;
         $loopKey = '';
         if (isset($filter['and'])) {
@@ -451,6 +456,14 @@ class UService
      */
     public function updateElement($element, array $data, string $schema)
     {
+        if ($element->getId()) {
+            $ev = new UBeforeCreateEvent($element, $data, $schema);
+            $this->eventDispatcher->dispatch($ev, UBeforeCreateEvent::NAME);
+        } else {
+            $ev = new UBeforeUpdateEvent($element, $data, $schema);
+            $this->eventDispatcher->dispatch($ev, UBeforeUpdateEvent::NAME);
+        }
+
         $properties = $this->getPropertiesForSchema($schema);
 
         foreach ($data as $key => $val) {
@@ -477,7 +490,7 @@ class UService
                     if (is_string($val)) {
                         $val = trim($val);
                     } else {
-//                        $notString[] = $key;
+                        //                        $notString[] = $key;
                     }
                 }
             }
