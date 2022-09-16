@@ -56,8 +56,12 @@ class UService
     public function getEntityFromSchemaAndId(string $schema, int $id)
     {
         $entityClass = $this->convertSchemaToEntity($schema);
-        $repo = $this->em->getRepository($entityClass);
-        $entity = $repo->find($id);
+        if ($id === 0) {
+            $entity = new $entityClass();
+        } else {
+            $repo = $this->em->getRepository($entityClass);
+            $entity = $repo->find($id);
+        }
         return $entity;
     }
 
