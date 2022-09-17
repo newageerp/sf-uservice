@@ -39,6 +39,45 @@ class UController extends UControllerBase
         return $this->json(['success' => 1, 'data' => [['success' => 1]]]);
     }
 
+/**
+     * @Route(path="/getMultipleForModel", methods={"POST"})
+     * @OA\Post (operationId="NAEUMultipleListForModels")
+     * @throws Exception
+     */
+    public function getMultipleForModel(
+        Request  $request,
+        UService $uService
+    ): JsonResponse
+    {
+        $modelFields = json_decode('/var/www/symfony/assets/model-fields.json', true);
+
+        $request = $this->transformJsonBody($request);
+
+        $user = $this->findUser($request);
+        if (!$user) {
+            throw new Exception('Invalid user');
+        }
+        AuthService::getInstance()->setUser($user);
+
+        $requestData = $request->get('data');
+
+        $output = [];
+        foreach ($requestData as $data) {
+            $output[$data['schema']] =
+                $uService->getListDataForSchema(
+                    $data['schema'],
+                    $data['page'] ?? 1,
+                    $data['pageSize'] ?? 20,
+                    isset($modelFields[$data['schema']]) ?$modelFields[$data['schema']]: ['id'],
+                    $data['filters'] ?? [],
+                    $data['extraData'] ?? [],
+                    $data['sort'] ?? [],
+                    $data['totals'] ?? []
+                );
+        }
+        return $this->json($output);
+    }
+
     /**
      * @Route(path="/getMultiple", methods={"POST"})
      * @OA\Post (operationId="NAEUMultipleList")
