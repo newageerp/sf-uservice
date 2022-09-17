@@ -49,7 +49,7 @@ class UController extends UControllerBase
         UService $uService
     ): JsonResponse
     {
-        $modelFields = json_decode('/var/www/symfony/assets/model-fields.json', true);
+        $modelFields = json_decode(file_get_contents('/var/www/symfony/assets/model-fields.json'), true);
 
         $request = $this->transformJsonBody($request);
 
