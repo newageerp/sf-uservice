@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Newageerp\SfCrud\Interface\IOnSaveService;
 use Symfony\Component\Routing\Annotation\Route;
 use OpenApi\Annotations as OA;
+use Newageerp\SfUservice\Events\UOnSaveCustomEvent;
 
 /**
  * @Route(path="/app/nae-core/u")
@@ -197,6 +198,13 @@ class UController extends UControllerBase
             $this->sendSocketPool();
 
             $jsonContent = ObjectSerializer::serializeRow($element, $fieldsToReturn);
+
+            if (isset($data['_events'])) {
+                foreach ($data['_events'] as $eventName) {
+                    $ev = new UOnSaveCustomEvent($element, $data, $schema);
+                    $this->getEventDispatcher()->dispatch($ev, $eventName);
+                }
+            }
 
             return $this->json(['element' => $jsonContent]);
         } catch (Exception $e) {
