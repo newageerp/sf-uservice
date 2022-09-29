@@ -45,7 +45,7 @@ class OnFlushEventListener
                     foreach ($onCreates as $entityName) {
                         $className = 'App\Entity\\' . $entityName;
 
-                        if ($entity::class === $className) {
+                        if ($entity::class === $className || 'Proxies\__CG__\\' . $className === $entity::class) {
                             $callAble = explode("::", $option['call']);
 
                             $resp = $callAble($entity);
@@ -70,7 +70,7 @@ class OnFlushEventListener
                     foreach ($onCreates as $entityName) {
                         $className = 'App\Entity\\' . $entityName;
 
-                        if ($entity::class === $className) {
+                        if ($entity::class === $className || 'Proxies\__CG__\\' . $className === $entity::class) {
                             $callAble = explode("::", $option['call']);
 
                             $resp = $callAble($entity);
@@ -97,7 +97,7 @@ class OnFlushEventListener
                         [$entityName, $field] = explode(".", $onChange);
                         $className = 'App\Entity\\' . $entityName;
 
-                        if ($entity::class === $className && isset($changes[$field])) {
+                        if (($entity::class === $className || 'Proxies\__CG__\\' . $className === $entity::class) && isset($changes[$field])) {
                             $callAble = explode("::", $option['call']);
 
                             $resp = $callAble($entity);
@@ -117,7 +117,7 @@ class OnFlushEventListener
                         [$entityName, $field] = explode(".", $onChange);
                         $className = 'App\Entity\\' . $entityName;
 
-                        if ($entity::class === $className && isset($changes[$field])) {
+                        if (($entity::class === $className || 'Proxies\__CG__\\' . $className === $entity::class) && isset($changes[$field])) {
                             $callAble = explode("::", $option['call']);
 
                             if ($changes[$field][0]) {
@@ -154,7 +154,7 @@ class OnFlushEventListener
                     foreach ($onCreates as $entityName) {
                         $className = 'App\Entity\\' . $entityName;
 
-                        if ($entity::class === $className) {
+                        if ($entity::class === $className || 'Proxies\__CG__\\' . $className === $entity::class) {
                             $callAble = explode("::", $option['call']);
 
                             $resp = $callAble($entity);
